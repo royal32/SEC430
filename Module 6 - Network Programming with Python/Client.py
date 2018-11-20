@@ -45,9 +45,9 @@ class AddressBookClient(EasyFrame):
 
     def find(self):
         """Looks up a name in the phone book."""
-        name = self.prompterBox(promptString="Enter the name.")
-        if name == "": return
-        self.server.send(bytes("FIND;" + name, CODE))
+        namere = self.prompterBox(promptString="Enter the name.")
+        if namere == "": return
+        self.server.send(bytes("FIND;" + namere, CODE))
         reply = decode(self.server.recv(BUFSIZE), CODE)
         if not reply:
             self.messageBox(message="Server diconnected")

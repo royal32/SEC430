@@ -1,3 +1,5 @@
+import re
+
 class Addressbook(object):
 
     def __init__(self):
@@ -34,6 +36,13 @@ class Addressbook(object):
 
     def get_by_index(self, index):
         return self.entries[index].get()
+
+    def get_by_name(self, namere):
+        for entry in self.entries:
+            first, last, _, _, _, _, _ = entry.get()
+            regex = re.compile(namere)
+            if (regex.search(first)) or (regex.search(last)):
+                print("match" + entry.get())
 
     def __str__(self):
         """Returns the string representation of the phone book."""
