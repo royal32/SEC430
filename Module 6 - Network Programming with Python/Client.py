@@ -19,7 +19,6 @@ BUFSIZE = 1024
 CODE = "ascii"
 
 
-
 class AddressBookClient(EasyFrame):
 
     def __init__(self):
@@ -48,7 +47,7 @@ class AddressBookClient(EasyFrame):
         """Looks up a name in the phone book."""
         name = self.prompterBox(promptString="Enter the name.")
         if name == "": return
-        self.server.send(bytes("FIND " + name, CODE))
+        self.server.send(bytes("FIND;" + name, CODE))
         reply = decode(self.server.recv(BUFSIZE), CODE)
         if not reply:
             self.messageBox(message="Server diconnected")
@@ -58,14 +57,26 @@ class AddressBookClient(EasyFrame):
 
     def add(self):
         """Adds a name and number to the phone book."""
-        name = self.prompterBox(promptString="Enter the name.")
-        if name == "": return
-        number = self.prompterBox(promptString="Enter the number.")
-        if number == "": return
-        self.server.send(bytes("ADD " + name + " " + number, CODE))
+        first = self.prompterBox(promptString="Enter the first name.")
+        if first == "": return
+        last = self.prompterBox(promptString="Enter the last name.")
+        if last == "": return
+        phone = self.prompterBox(promptString="Enter the phone number.")
+        if phone == "": return
+        street = self.prompterBox(promptString="Enter the street address.")
+        if street == "": return
+        city = self.prompterBox(promptString="Enter the city.")
+        if city == "": return
+        state = self.prompterBox(promptString="Enter the state.")
+        if state == "": return
+        zip = self.prompterBox(promptString="Enter the zip code.")
+        if zip == "": return
+        package = ("ADD;{},{},{},{},{},{},{}"
+                   .format(first, last, phone, street, city, state, zip))
+        self.server.send(bytes(package, CODE))
         reply = decode(self.server.recv(BUFSIZE), CODE)
         if not reply:
-            self.messageBox(message="Server diconnected")
+            self.messageBox(message="Server disconnected")
             self.disconnect()
         else:
             self.statusLabel["text"] = reply
@@ -93,13 +104,16 @@ class AddressBookClient(EasyFrame):
     def download(self):
         self.statusLabel["text"] = "Downloading..."
         inbound = ""
-        self.server.send(bytes("LIST", CODE))
+        self.server.send(bytes("LIST;", CODE))
         i = 0
-        while inbound != "DONE":
+        while True:
             inbound = decode(self.server.recv(BUFSIZE), CODE)
-            self.addrListBox.insert(i, inbound)
-            outbound = self.server.send(bytes("OK", CODE))
-            i += 1
+            if inbound != "DONE":
+                self.addrListBox.insert(i, inbound)
+                outbound = self.server.send(bytes("OK", CODE))
+                i += 1
+            else:
+                break
 
 
 def main():

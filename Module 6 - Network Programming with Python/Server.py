@@ -3,8 +3,6 @@ Primary Author: Seth Phillips
 Team Members: Seth Phillips, Eric Betz
 Program: Address Book Server
 
-
-
 """
 
 from breezypythongui import EasyFrame

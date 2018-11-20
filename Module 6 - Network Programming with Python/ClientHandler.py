@@ -28,7 +28,7 @@ class ClientHandler():
                 self.client.close()
                 break
             else:
-                request = message.split()
+                request = message.split(";")
                 command = request[0]
                 if command == "FIND":
                     number = self.addressbook.get(request[1])
@@ -37,7 +37,7 @@ class ClientHandler():
                     else:
                         reply = "The number is " + number + '.'
                 elif command == "ADD":
-                    self.addressbook.add(request[1], request[2])
+                    self.addressbook.add(request[1])
                     reply = "Name and number added to phone book."
                 elif command == "LIST":
                     for entry in self.addressbook:

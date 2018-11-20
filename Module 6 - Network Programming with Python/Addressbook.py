@@ -24,10 +24,6 @@ class Addressbook(object):
     def get_filename(self):
         return self.filename
 
-    def add(self, first, last, phone, street, city, state, zip):
-
-        self.entries.append(Person(first, last, phone, street, city, state, zip))
-
     def add(self, data):
 
         for i, entry in enumerate(data):
@@ -35,7 +31,6 @@ class Addressbook(object):
             attributes = entry.split(",")
             self.entries.append(Person())
             self.entries[i].add(attributes)
-            # print(str(self.entries[i]))
 
     def get_by_index(self, index):
         return self.entries[index].get()
