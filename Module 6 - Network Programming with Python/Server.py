@@ -17,7 +17,7 @@ from Addressbook import Addressbook
 from ClientHandler import ClientHandler
 
 """Configuration"""
-HOST = "66.31.240.86"
+HOST = "localhost"
 PORT = 7000
 ADDRESS = (HOST, PORT)
 
@@ -82,7 +82,7 @@ class AddressBookServer(EasyFrame):
             (client, address) = server.accept()
             print("... connected from: ", address)
             clienthandler = ClientHandler(client, addressbook)
-            threading.Thread(target=clienthandler.start).start()
+            threading.Thread(target=clienthandler.run()).start()
 
     def stop_server(self):
         server.shutdown(SHUT_RDWR) # Currently throws an error

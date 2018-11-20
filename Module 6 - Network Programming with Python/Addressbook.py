@@ -3,6 +3,20 @@ class Addressbook(object):
     def __init__(self):
         self.entries = []
         self.filename = ""
+        self.iter_current = 0
+
+    def __iter__(self):
+        """Makes object iterable"""
+        return self
+
+    def __next__(self):
+        if self.iter_current >= len(self.entries):
+            raise StopIteration
+        else:
+            print(self.iter_current)
+            result = self.entries[self.iter_current]
+            self.iter_current += 1
+            return result
 
     def set_filename(self, filename):
         self.filename = filename
@@ -23,9 +37,8 @@ class Addressbook(object):
             self.entries[i].add(attributes)
             # print(str(self.entries[i]))
 
-    def get(self, name):
-
-        return self.entries.get(name)
+    def get_by_index(self, index):
+        return self.entries[index].get()
 
     def __str__(self):
         """Returns the string representation of the phone book."""
@@ -55,10 +68,8 @@ class Person:
         self.state = attributes[5]
         self.zip = attributes[6]
 
-    def get(self, query):
-        pass
-
-    # TODO: implement search
+    def get(self):
+        return self.first, self.last, self.phone, self.street, self.city, self.state, self.zip
 
     def __str__(self):
         return "%s, %s, %s, %s, %s, %s, %s" % (self.first, self.last, self.phone, self.street,

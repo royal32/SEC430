@@ -36,9 +36,19 @@ class ClientHandler():
                         reply = "Number not found."
                     else:
                         reply = "The number is " + number + '.'
-                else:
+                elif command == "ADD":
                     self.addressbook.add(request[1], request[2])
                     reply = "Name and number added to phone book."
+                elif command == "LIST":
+                    for entry in self.addressbook:
+                        outbound = str(entry)
+                        self.client.send(bytes(outbound, CODE))
+                        inbound = decode(self.client.recv(BUFSIZE), CODE)
+                        if not inbound:
+                            print("Client disconnected")
+                            self.client.close()
+                            break
+                    reply = "DONE"
                 self.client.send(bytes(reply, CODE))
 
 

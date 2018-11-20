@@ -11,11 +11,13 @@ from socket import *
 from codecs import decode
 from breezypythongui import EasyFrame
 
-HOST = "66.31.240.86"
+"""Configuration"""
+HOST = "localhost"
 PORT = 7000
 ADDRESS = (HOST, PORT)
 BUFSIZE = 1024
 CODE = "ascii"
+
 
 
 class AddressBookClient(EasyFrame):
@@ -24,9 +26,9 @@ class AddressBookClient(EasyFrame):
         """Initialize the frame and widgets."""
         EasyFrame.__init__(self, title="Address Book Client")
         # Add the labels, fields, and button
-        self.statusLabel = self.addLabel(text="Do you want to connect to the Phonebook?",
-                                         row=0, column=0,
-                                         columnspan=3)
+
+        self.addrListBox = self.addListbox(row=0, column=0, columnspan=3)
+
         self.findBtn = self.addButton(row=1, column=0,
                                       text="Find",
                                       command=self.find,
@@ -38,6 +40,9 @@ class AddressBookClient(EasyFrame):
         self.connectBtn = self.addButton(row=1, column=2,
                                          text="Connect",
                                          command=self.connect)
+        self.statusLabel = self.addLabel(text="Not connected to a server.",
+                                         row=2, column=0,
+                                         columnspan=3)
 
     def find(self):
         """Looks up a name in the phone book."""
@@ -75,6 +80,7 @@ class AddressBookClient(EasyFrame):
         self.connectBtn["command"] = self.disconnect
         self.findBtn["state"] = "normal"
         self.addBtn["state"] = "normal"
+        self.download()
 
     def disconnect(self):
         self.server.close()
@@ -83,6 +89,17 @@ class AddressBookClient(EasyFrame):
         self.connectBtn["command"] = self.connect
         self.findBtn["state"] = "disabled"
         self.addBtn["state"] = "disabled"
+
+    def download(self):
+        self.statusLabel["text"] = "Downloading..."
+        inbound = ""
+        self.server.send(bytes("LIST", CODE))
+        i = 0
+        while inbound != "DONE":
+            inbound = decode(self.server.recv(BUFSIZE), CODE)
+            self.addrListBox.insert(i, inbound)
+            outbound = self.server.send(bytes("OK", CODE))
+            i += 1
 
 
 def main():
