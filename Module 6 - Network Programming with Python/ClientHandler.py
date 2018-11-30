@@ -31,12 +31,20 @@ class ClientHandler():
                 request = message.split(";")
                 command = request[0]
                 if command == "FIND":
-                    namere = self.addressbook.get_by_name(request[1])
-                    if not namere:
+                    result = self.addressbook.get_by_name(request[1])
+                    if not result:
                         reply = "Name not found."
                     else:
-                        self.addressbook.get_by_name(namere)
-                        reply = "The name is " +  + '.'
+                        for entry in result:
+                            outbound = entry
+                            self.client.send(bytes(outbound, CODE))
+                            inbound = decode(self.client.recv(BUFSIZE), CODE)
+                            if not inbound:
+                                print("Client disconnected")
+                                self.client.close()
+                                break
+                        reply = "DONE"
+
                 elif command == "ADD":
                     self.addressbook.add(request[1])
                     reply = "Name and number added to phone book."

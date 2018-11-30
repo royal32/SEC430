@@ -48,12 +48,20 @@ class AddressBookClient(EasyFrame):
         namere = self.prompterBox(promptString="Enter the name.")
         if namere == "": return
         self.server.send(bytes("FIND;" + namere, CODE))
-        reply = decode(self.server.recv(BUFSIZE), CODE)
-        if not reply:
-            self.messageBox(message="Server diconnected")
-            self.disconnect()
-        else:
-            self.statusLabel["text"] = reply
+        result = []
+        i = 0
+        while True:
+            inbound = decode(self.server.recv(BUFSIZE), CODE)
+            if not inbound:
+                self.messageBox(message="Server disconnected")
+                self.disconnect()
+            elif inbound != "DONE":
+                result.append(inbound)
+                self.server.send(bytes("OK", CODE))
+                i += 1
+            else:
+                break
+        self.messageBox(message=str(result))
 
     def add(self):
         """Adds a name and number to the phone book."""
@@ -110,7 +118,7 @@ class AddressBookClient(EasyFrame):
             inbound = decode(self.server.recv(BUFSIZE), CODE)
             if inbound != "DONE":
                 self.addrListBox.insert(i, inbound)
-                outbound = self.server.send(bytes("OK", CODE))
+                self.server.send(bytes("OK", CODE))
                 i += 1
             else:
                 break

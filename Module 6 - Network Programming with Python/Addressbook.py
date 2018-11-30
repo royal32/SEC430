@@ -38,11 +38,12 @@ class Addressbook(object):
         return self.entries[index].get()
 
     def get_by_name(self, namere):
+        result = []
         for entry in self.entries:
-            first, last, _, _, _, _, _ = entry.get()
-            regex = re.compile(namere)
-            if (regex.search(first)) or (regex.search(last)):
-                print("match" + entry.get())
+            if re.search(namere, str(entry), re.IGNORECASE):
+                 result.append(str(entry))
+        return result
+
 
     def __str__(self):
         """Returns the string representation of the phone book."""
@@ -79,22 +80,3 @@ class Person:
         return "%s, %s, %s, %s, %s, %s, %s" % (self.first, self.last, self.phone, self.street,
                                                self.city, self.state, self.zip)
 
-
-def main():
-    """
-        Testing function for PhoneBook.
-        The main function is not meant to be called directly from the other programs
-    """
-    book = Addressbook()  # instantiate the phonebook class into a phonebook object
-    for name in range(10):
-        # This loop is for testing purpose
-        # in actual phone book app, this main is not called
-        #
-        book.add("Name" + str(name), "524-4682")
-    print(book)
-    for name in range(10):
-        print(book.get("Name" + str(name)))
-
-
-if __name__ == "__main__":
-    main()
