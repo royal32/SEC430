@@ -2,7 +2,7 @@
 Primary Author: Seth Phillips
 Team Members: Seth Phillips, Eric Betz
 Program: Address Book Client
-
+This program creates a gui based virtual client to interact with the virtual server.
 
 
 """
@@ -22,35 +22,40 @@ CODE = "ascii"
 class AddressBookClient(EasyFrame):
 
     def __init__(self):
-        """Initialize the frame and widgets."""
+        """Initialize the frame and widgets for the GUI"""
         EasyFrame.__init__(self, title="Address Book Client")
-        # Add the labels, fields, and button
-
+        # Add the labels, fields, and buttons
+        
         self.addrListBox = self.addListbox(row=0, column=0, columnspan=3)
-
+        # Creates find button
         self.findBtn = self.addButton(row=1, column=0,
                                       text="Find",
                                       command=self.find,
                                       state="disabled")
+        # Creates add button
         self.addBtn = self.addButton(row=1, column=1,
                                      text="Add",
                                      command=self.add,
                                      state="disabled")
+        # Creates connection button to connect to server
         self.connectBtn = self.addButton(row=1, column=2,
                                          text="Connect",
                                          command=self.connect)
+        # Creates display of server connection status
         self.statusLabel = self.addLabel(text="Not connected to a server.",
                                          row=2, column=0,
                                          columnspan=3)
 
     def find(self):
         """Looks up a name in the phone book."""
+        # Prompts user for input of desired search
         namere = self.prompterBox(promptString="Enter the name.")
         if namere == "": return
         self.server.send(bytes("FIND;" + namere, CODE))
         result = []
         i = 0
         while True:
+        # Ensures the server is connected, continues search until complete or server disconnect 
             inbound = decode(self.server.recv(BUFSIZE), CODE)
             if not inbound:
                 self.messageBox(message="Server disconnected")
@@ -62,9 +67,9 @@ class AddressBookClient(EasyFrame):
             else:
                 break
         self.messageBox(message=str(result))
-
+        
     def add(self):
-        """Adds a name and number to the phone book."""
+        """Adds name, number, and address to the phone book."""
         first = self.prompterBox(promptString="Enter the first name.")
         if first == "": return
         last = self.prompterBox(promptString="Enter the last name.")
@@ -79,11 +84,13 @@ class AddressBookClient(EasyFrame):
         if state == "": return
         zip = self.prompterBox(promptString="Enter the zip code.")
         if zip == "": return
+        # Adds commas for delimination
         package = ("ADD;{},{},{},{},{},{},{}"
                    .format(first, last, phone, street, city, state, zip))
         self.server.send(bytes(package, CODE))
         reply = decode(self.server.recv(BUFSIZE), CODE)
         if not reply:
+            # Creates notification of server disconnection
             self.messageBox(message="Server disconnected")
             self.disconnect()
         else:
@@ -100,7 +107,7 @@ class AddressBookClient(EasyFrame):
         self.findBtn["state"] = "normal"
         self.addBtn["state"] = "normal"
         self.download()
-
+    # Disconnects from server
     def disconnect(self):
         self.server.close()
         self.statusLabel["text"] = "Want to connect?"
@@ -108,7 +115,7 @@ class AddressBookClient(EasyFrame):
         self.connectBtn["command"] = self.connect
         self.findBtn["state"] = "disabled"
         self.addBtn["state"] = "disabled"
-
+     # notifies user of download status
     def download(self):
         self.statusLabel["text"] = "Downloading..."
         inbound = ""
