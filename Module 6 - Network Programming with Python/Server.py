@@ -3,6 +3,8 @@ Primary Author: Seth Phillips
 Team Members: Seth Phillips, Eric Betz
 Program: Address Book Server
 
+This program creates a virtual server for client interaction.
+It uses a gui interface to turn on and off the server.  
 """
 
 from breezypythongui import EasyFrame
@@ -28,17 +30,20 @@ class AddressBookServer(EasyFrame):
     def __init__(self):
         """Sets up the window,widgets, and data."""
         EasyFrame.__init__(self, title="Address Book Server")
-
+        # Sets attributes for and creates and labels a button to open files
         self.file_open_btn = self.addButton(text="Open", row=0, column=0, command=self.open_file)
         self.file_label = self.addLabel(text="Please open an address book.", row=0, column=1)
-
+        # Default setting of server status
         self.server_running = False
+        # List of the available status states for the server
         self.status_label_dict = {"running": "Server is running.", "not_running": "Server is not running.",
                                   "error": "An error occurred."}
+        # Sets attributes for and creates and labels start button
         self.status_button = self.addButton(text="Start", row=1, column=0, command=self.toggle_server)
         self.status_label = self.addLabel(text=self.status_label_dict["not_running"], row=1, column=1, foreground="red")
 
     def open_file(self):
+        # Enables the opening of files
         filetype_list = [("Comma Separated Values (CSV)", "*.csv")]
         filename = tkinter.filedialog.askopenfilename(parent=self, filetypes=filetype_list)
 
@@ -47,16 +52,19 @@ class AddressBookServer(EasyFrame):
                 file = open(filename, "r")
                 data = list(file)
                 data.pop(
-                    0)  # This program expects the first line to be "First Name,Last Name,Phone,Address,City,State,Zip", this removes that
+                    0)  # This changes the program's default to expect the first line to be: 
+                        # "First Name,Last Name,Phone,Address,City,State,Zip",. 
                 addressbook.add(data)
                 addressbook.set_filename(filename)
                 file.close()
+                # Prints a string of the address book
                 print(str(addressbook))
                 self.file_label["text"] = os.path.basename(filename) + " loaded."
 
             except IOError:
+                # File error message
                 self.messageBox(title="Error", message="I/O Error occurred while opening the file.")
-
+    # Turns the server on and off.
     def toggle_server(self):
         if self.server_running:
             self.stop_server()
@@ -68,8 +76,10 @@ class AddressBookServer(EasyFrame):
             self.status_label["text"] = self.status_label_dict["running"]
             self.status_label["foreground"] = "green"
         else:
+            # Notifies user to load address book prior to server start
             self.messageBox(title="Error", message="Please load an address book before starting the server.")
-
+    
+    # Defines what server does if / when started
     def start_server(self):
         server.bind(ADDRESS)
         server.listen(5)
