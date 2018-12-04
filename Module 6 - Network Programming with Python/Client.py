@@ -25,7 +25,7 @@ class AddressBookClient(EasyFrame):
         """Initialize the frame and widgets for the GUI"""
         EasyFrame.__init__(self, title="Address Book Client")
         # Add the labels, fields, and buttons
-        
+
         self.addrListBox = self.addListbox(row=0, column=0, columnspan=3)
         # Creates find button
         self.findBtn = self.addButton(row=1, column=0,
@@ -55,7 +55,7 @@ class AddressBookClient(EasyFrame):
         result = []
         i = 0
         while True:
-        # Ensures the server is connected, continues search until complete or server disconnect 
+            # Ensures the server is connected, continues search until complete or server disconnect
             inbound = decode(self.server.recv(BUFSIZE), CODE)
             if not inbound:
                 self.messageBox(message="Server disconnected")
@@ -67,7 +67,7 @@ class AddressBookClient(EasyFrame):
             else:
                 break
         self.messageBox(message=str(result))
-        
+
     def add(self):
         """Adds name, number, and address to the phone book."""
         first = self.prompterBox(promptString="Enter the first name.")
@@ -107,6 +107,7 @@ class AddressBookClient(EasyFrame):
         self.findBtn["state"] = "normal"
         self.addBtn["state"] = "normal"
         self.download()
+
     # Disconnects from server
     def disconnect(self):
         self.server.close()
@@ -115,9 +116,11 @@ class AddressBookClient(EasyFrame):
         self.connectBtn["command"] = self.connect
         self.findBtn["state"] = "disabled"
         self.addBtn["state"] = "disabled"
-     # notifies user of download status
+
+    # notifies user of download status
     def download(self):
         self.statusLabel["text"] = "Downloading..."
+        self.addrListBox.clear()
         inbound = ""
         self.server.send(bytes("LIST;", CODE))
         i = 0
@@ -129,6 +132,7 @@ class AddressBookClient(EasyFrame):
                 i += 1
             else:
                 break
+        self.statusLabel["text"] = "Finished downloading"
 
 
 def main():

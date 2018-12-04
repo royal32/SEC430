@@ -53,7 +53,7 @@ class AddressBookServer(EasyFrame):
                 data = list(file)
                 data.pop(
                     0)  # This changes the program's default to expect the first line to be: 
-                        # "First Name,Last Name,Phone,Address,City,State,Zip",. 
+                # "First Name,Last Name,Phone,Address,City,State,Zip",.
                 addressbook.add(data)
                 addressbook.set_filename(filename)
                 file.close()
@@ -64,6 +64,7 @@ class AddressBookServer(EasyFrame):
             except IOError:
                 # File error message
                 self.messageBox(title="Error", message="I/O Error occurred while opening the file.")
+
     # Turns the server on and off.
     def toggle_server(self):
         if self.server_running:
@@ -78,7 +79,7 @@ class AddressBookServer(EasyFrame):
         else:
             # Notifies user to load address book prior to server start
             self.messageBox(title="Error", message="Please load an address book before starting the server.")
-    
+
     # Defines what server does if / when started
     def start_server(self):
         server.bind(ADDRESS)
@@ -93,8 +94,8 @@ class AddressBookServer(EasyFrame):
             threading.Thread(target=clienthandler.run()).start()
 
     def stop_server(self):
-        server.shutdown(SHUT_RDWR) # Currently throws an error
-        server.close() # Currently throws an error
+        server.shutdown(SHUT_RDWR)  # Currently throws an error
+        server.close()  # Currently throws an error
         print("server stopped")
         return
 
