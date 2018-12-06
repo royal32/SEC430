@@ -43,7 +43,10 @@ class AddressBookServer(EasyFrame):
         self.status_label = self.addLabel(text=self.status_label_dict["not_running"], row=1, column=1, foreground="red")
 
     def open_file(self):
-        # Enables the opening of files
+        """
+        Loads a .csv from an OS load file dialog,
+        creates a list from it, adds it to the addressbook, and closes it.
+        """
         filetype_list = [("Comma Separated Values (CSV)", "*.csv")]
         filename = tkinter.filedialog.askopenfilename(parent=self, filetypes=filetype_list)
 
@@ -51,14 +54,10 @@ class AddressBookServer(EasyFrame):
             try:
                 file = open(filename, "r")
                 data = list(file)
-                data.pop(
-                    0)  # This changes the program's default to expect the first line to be: 
-                # "First Name,Last Name,Phone,Address,City,State,Zip",.
+                data.pop(0)  # Remove the "First Name,Last Name,Phone,Address,City,State,Zip" line from the file
                 addressbook.add(data)
                 addressbook.set_filename(filename)
                 file.close()
-                # Prints a string of the address book
-                print(str(addressbook))
                 self.file_label["text"] = os.path.basename(filename) + " loaded."
 
             except IOError:
@@ -67,6 +66,7 @@ class AddressBookServer(EasyFrame):
 
     # Turns the server on and off.
     def toggle_server(self):
+        """Determines whether an addressbook is loaded and starts the server, or shuts it down if its running."""
         if self.server_running:
             self.stop_server()
             self.status_label["text"] = self.status_label_dict["not_running"]
@@ -82,6 +82,7 @@ class AddressBookServer(EasyFrame):
 
     # Defines what server does if / when started
     def start_server(self):
+        """Start the server"""
         server.bind(ADDRESS)
         server.listen(5)
         print("listening")
@@ -94,6 +95,7 @@ class AddressBookServer(EasyFrame):
             threading.Thread(target=clienthandler.run()).start()
 
     def stop_server(self):
+        """Stop the server. Haven't gotten this working yet."""
         server.shutdown(SHUT_RDWR)  # Currently throws an error
         server.close()  # Currently throws an error
         print("server stopped")

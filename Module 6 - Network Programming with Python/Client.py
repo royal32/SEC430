@@ -64,9 +64,12 @@ class AddressBookClient(EasyFrame):
                 result.append(inbound)
                 self.server.send(bytes("OK", CODE))
                 i += 1
-            else:
+            elif inbound == "DONE":
+                if not result:
+                    result.append("No results found.")
                 break
-        self.messageBox(message=str(result))
+
+        self.messageBox(message=", ".join(result), width=75)
 
     def add(self):
         """Adds name, number, and address to the phone book."""
