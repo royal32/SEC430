@@ -13,16 +13,13 @@ import os
 import threading
 import re
 from socket import *
-from Addressbook import Addressbook
+from Addressbook import ThreadSafeAddressbook
 from ClientHandler import ClientHandler
 
 """Configuration"""
 HOST = "localhost"
 PORT = 7000
 ADDRESS = (HOST, PORT)
-
-addressbook = Addressbook()
-server = socket(AF_INET, SOCK_STREAM)
 
 
 class AddressBookServer(EasyFrame):
@@ -42,6 +39,8 @@ class AddressBookServer(EasyFrame):
         self.status_button = self.addButton(text="Start", row=1, column=0, command=self.toggle_server)
         self.status_label = self.addLabel(text=self.status_label_dict["not_running"], row=1, column=1, foreground="red")
 
+        self.server = socket(AF_INET, SOCK_STREAM)
+
     def open_file(self):
         """
         Loads a .csv from an OS load file dialog,
@@ -49,20 +48,33 @@ class AddressBookServer(EasyFrame):
         """
         filetype_list = [("Comma Separated Values (CSV)", "*.csv")]
         filename = tkinter.filedialog.askopenfilename(parent=self, filetypes=filetype_list)
+        try:
+            file = open(filename, "r")
+            data = list(file)
+            file.close()
+            data.pop(0)  # Remove the "First Name,Last Name,Phone,Address,City,State,Zip" line from the file
+            self.addressbook = ThreadSafeAddressbook()
+            self.addressbook.add(data)
+            self.addressbook.set_filename(filename)
+            self.file_label["text"] = os.path.basename(filename) + " loaded."
 
-        if filename != "":
-            try:
-                file = open(filename, "r")
-                data = list(file)
-                data.pop(0)  # Remove the "First Name,Last Name,Phone,Address,City,State,Zip" line from the file
-                addressbook.add(data)
-                addressbook.set_filename(filename)
-                file.close()
-                self.file_label["text"] = os.path.basename(filename) + " loaded."
+        except IOError:
+            # File error message
+            self.messageBox(title="Error", message="I/O Error occurred while opening the file.")
 
-            except IOError:
-                # File error message
-                self.messageBox(title="Error", message="I/O Error occurred while opening the file.")
+        except IndexError:
+            self.messageBox(title="Error", message="An error has occurred. Check the format of the file.")
+
+        print(str(self.addressbook))
+
+    def save_file(self):
+        """Opens the addressbook file on the disk and saves the contents of the addressbook object to it."""
+        filename = self.addressbook.get_filename()
+        file = open(filename, "w")
+        data = "First Name,Last Name,Phone,Address,City,State,Zip\n" + str(self.addressbook)
+        file.write(data)
+        file.close()
+        print("Addressbook Saved")
 
     # Turns the server on and off.
     def toggle_server(self):
@@ -71,7 +83,7 @@ class AddressBookServer(EasyFrame):
             self.stop_server()
             self.status_label["text"] = self.status_label_dict["not_running"]
             self.status_label["foreground"] = "red"
-        elif addressbook.get_filename() != "":
+        elif self.addressbook.get_filename() != "":
             """Start the server, but do it in a new thread so that the GUI stays responsive."""
             threading.Thread(target=self.start_server).start()
             self.status_label["text"] = self.status_label_dict["running"]
@@ -83,21 +95,34 @@ class AddressBookServer(EasyFrame):
     # Defines what server does if / when started
     def start_server(self):
         """Start the server"""
-        server.bind(ADDRESS)
-        server.listen(5)
-        print("listening")
-        self.server_running = True
-        while True:
-            print("Waiting for connection ...")
-            (client, address) = server.accept()
-            print("... connected from: ", address)
-            clienthandler = ClientHandler(client, addressbook)
-            threading.Thread(target=clienthandler.run()).start()
+        try:
+            self.server.bind(ADDRESS)
+            self.server.listen(5)
+            print("listening")
+            self.server_running = True
+        except OSError:
+            self.messageBox(title="Error", message="There was an error starting the server.")
+
+        while self.server_running:
+            try:
+                print("Waiting for connection ...")
+                (client, address) = self.server.accept()
+                print("... connected from: ", address)
+            except:
+                self.messageBox(title="Error", message="There was an error connecting to a client.")
+                break
+
+            try:
+                clienthandler = ClientHandler(self, client, self.addressbook)
+                clienthandler.start()
+            except:
+                self.messageBox(title="Error", message="There was an error starting a client handler.")
+                break
 
     def stop_server(self):
         """Stop the server. Haven't gotten this working yet."""
-        server.shutdown(SHUT_RDWR)  # Currently throws an error
-        server.close()  # Currently throws an error
+        # self.server.shutdown(SHUT_RDWR)  # Currently throws an error
+        # self,server.close()  # Currently throws an error
         print("server stopped")
         return
 

@@ -12,6 +12,7 @@ Add a name to the list.
 
 from socket import *
 from codecs import decode
+from threading import Thread
 import re
 
 BUFSIZE = 1024
@@ -21,11 +22,13 @@ CODE = "ascii"  # Default set to use ascii characters
 # You can specify other encoding, such as UTF-8 for non-English characters
 
 
-class ClientHandler():
+class ClientHandler(Thread):
     """Handles a phonebook requests from a client."""
 
-    def __init__(self, client, addressbook):
+    def __init__(self, server, client, addressbook):
         """Saves references to the client socket and phonebook."""
+        Thread.__init__(self)
+        self.server = server
         self.client = client
         self.addressbook = addressbook
         # Welcomes user to program when connected to server
@@ -37,6 +40,8 @@ class ClientHandler():
         Communication Diagram:
         inbound = decoded data received from a client.
         message = list containing each piece of the inbound message. (eg. ['ADD','Data1,Data2']
+            command = The piece of the inbound message before the delimiting semicolon.
+            payload = The piece of the inbound message after the delimiting semicolon.
 
         """
         self.client.send(bytes("Welcome to the address book application!", CODE))
@@ -55,32 +60,36 @@ class ClientHandler():
                 # super exploitable..... Might be a fun experiment.
 
                 message = inbound.split(";")  # Splits the received command by semicolon.
-                command = message[0]
-                payload = message[1]
+                command = message[0].strip()
+                payload = message[1].strip()
 
                 if command == "FIND":
+                    # Lists entries matched by regex
                     result = self.addressbook.get_by_name(payload)
                     if not result:
-                        # Display when name is not present in address book
-                        reply = "DONE"
+                        break
                     else:
                         for entry in result:
                             outbound = entry
                             self.client.send(bytes(outbound, CODE))
-                            inbound = decode(self.client.recv(BUFSIZE), CODE)
+                            inbound = decode(self.client.recv(BUFSIZE),
+                                             CODE)  # The client responds with OK for each entry received.
                             if not inbound:
                                 # Displays connection status if closed
                                 print("Client disconnected")
                                 self.client.close()
                                 break
-                        reply = "DONE"
-                    # Allows adding to the address book
+
                 elif command == "ADD":
-                    self.addressbook.add([payload])  # [string] crates a list of one string
-                    # Confirms the information has been added
-                    reply = "Name and number added to address book."
+                    # Allows adding to the address book
+                    self.addressbook.set([payload])  # [string] crates a list of one string
+
+                elif command == "UPDATE":
+                    # Allows a client to edit an entry
+                    self.addressbook.update(payload)
+
                 elif command == "LIST":
-                    # Lists data from address book
+                    # Lists all entries from address book
                     for entry in self.addressbook:
                         outbound = str(entry)
                         self.client.send(bytes(outbound, CODE))
@@ -90,6 +99,10 @@ class ClientHandler():
                             print("Client disconnected")
                             self.client.close()
                             break
-                    reply = "DONE"
                     self.addressbook.iter_reset()
-                self.client.send(bytes(reply, CODE))
+
+                elif command == "SAVE":
+                    # Tell the server to write the addressbook to the file
+                    self.server.save_file()
+
+                self.client.send(bytes("DONE", CODE))
