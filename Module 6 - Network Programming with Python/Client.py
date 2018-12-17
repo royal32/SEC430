@@ -10,7 +10,6 @@ This program creates a gui based virtual client to interact with the virtual ser
 from socket import *
 from codecs import decode
 from breezypythongui import EasyFrame
-from threading import Thread, Event
 
 """Configuration"""
 HOST = "localhost"
@@ -28,54 +27,61 @@ class AddressBookClient(EasyFrame):
         # Add the labels, fields, and buttons
 
         self.addrListBox = self.addListbox(row=0, column=0, columnspan=3)
+
+        entry_event_panel = self.addPanel(row=1, column=0,
+                                          columnspan=3)
+
         # Creates find button
-        self.findBtn = self.addButton(row=1, column=0,
-                                      text="Find",
-                                      command=self.find,
-                                      state="disabled")
+        self.findBtn = entry_event_panel.addButton(row=0, column=0,
+                                                   text="Find",
+                                                   command=self.find,
+                                                   state="disabled")
         # Creates add button
-        self.addBtn = self.addButton(row=1, column=1,
-                                     text="Add",
-                                     command=self.add,
-                                     state="disabled")
+        self.addBtn = entry_event_panel.addButton(row=1, column=0,
+                                                  text="Add",
+                                                  command=self.add,
+                                                  state="disabled")
         # Creates update button
-        self.updateBtn = self.addButton(row=1, column=2,
-                                        text="Update",
-                                        command=self.update,
-                                        state="disabled")
+        self.updateBtn = entry_event_panel.addButton(row=0, column=1,
+                                                     text="Update",
+                                                     command=self.update,
+                                                     state="disabled")
+
+        # Creates delete button
+        self.deleteBtn = entry_event_panel.addButton(row=1, column=1,
+                                                     text="Delete",
+                                                     command=self.delete,
+                                                     state="disabled")
+
+        server_event_panel = self.addPanel(row=2, column=0,
+                                           columnspan=3)
 
         # Creates button to tell the server to write the addressbook to the file
-        self.saveBtn = self.addButton(row=2, column=0,
-                                      text="Save",
-                                      command=self.save,
-                                      state="disabled")
-
-        # Creates connection button to connect to server
-        self.connectBtn = self.addButton(row=2, column=1, columnspan=2,
-                                         text="Connect",
-                                         command=self.connect)
+        self.saveBtn = server_event_panel.addButton(row=0, column=0,
+                                                    text="Save",
+                                                    command=self.save,
+                                                    state="disabled")
 
         # Creates refresh button to refresh the local addressbook
-        self.refreshBtn = self.addButton(row=3, column=0, columnspan=3,
-                                         text="Refresh",
-                                         command=self.download,
-                                         state="disabled")
+        self.refreshBtn = server_event_panel.addButton(row=0, column=1,
+                                                       text="Refresh",
+                                                       command=self.download,
+                                                       state="disabled")
+
+        # Creates connection button to connect to server
+        self.connectBtn = server_event_panel.addButton(row=1, column=0,
+                                                       columnspan=3,
+                                                       text="Connect",
+                                                       command=self.connect)
 
         # Creates display of client status
-        self.statusLabel = self.addLabel(text="Not connected to a server.",
-                                         row=4, column=0,
-                                         columnspan=3)
-
-    #
-    # def receive(self, kill):
-    #     while not kill.is_set():
-    #         inbound = decode(self.server.recv(BUFSIZE), CODE)
-    #         print(inbound)
+        self.statusLabel = server_event_panel.addLabel(text="Not connected to a server.",
+                                                       row=3, column=0,
+                                                       columnspan=3)
 
     def find(self):
         """Looks up a name in the phone book."""
         # Prompts user for input of desired search
-        self.download()
         namere = self.prompterBox(promptString="Enter your query.")
         if namere == "": return
         self.server.send(bytes("FIND;" + namere, CODE))
@@ -126,7 +132,6 @@ class AddressBookClient(EasyFrame):
             self.disconnect()
         else:
             self.statusLabel["text"] = "Entry added."
-        self.download()
 
     def update(self):
         """Adds name, number, and address to the phone book."""
@@ -158,7 +163,16 @@ class AddressBookClient(EasyFrame):
             self.disconnect()
         else:
             self.statusLabel["text"] = "Entry edited."
-        self.download()
+
+    def delete(self):
+        """Tells the server to delete the selected entry"""
+        self.statusLabel["text"] = "Deleting..."
+
+        entry = self.addrListBox.getSelectedItem()
+        package = ("DELETE;{}".format(entry))
+
+        self.server.send(bytes(package, CODE))
+        self.statusLabel["text"] = "Entry Deleted"
 
     def connect(self):
         """Connect to the server"""
@@ -170,24 +184,21 @@ class AddressBookClient(EasyFrame):
         self.findBtn["state"] = "normal"
         self.addBtn["state"] = "normal"
         self.updateBtn["state"] = "normal"
+        self.deleteBtn["state"] = "normal"
         self.saveBtn["state"] = "normal"
         self.refreshBtn["state"] = "normal"
         self.download()
-        #
-        # self.kill = Event() #threading.Event()
-        # self.receiver_thread = Thread(target=self.receive(self.kill))
-        # self.receiver_thread.start()
 
     def disconnect(self):
         """Disconnect from the server"""
         self.server.close()
-        # self.kill.set()
         self.statusLabel["text"] = "Want to connect?"
         self.connectBtn["text"] = "Connect"
         self.connectBtn["command"] = self.connect
         self.findBtn["state"] = "disabled"
         self.addBtn["state"] = "disabled"
         self.updateBtn["state"] = "disabled"
+        self.deleteBtn["state"] = "disabled"
         self.saveBtn["state"] = "disabled"
         self.refreshBtn["state"] = "disabled"
 
@@ -196,13 +207,11 @@ class AddressBookClient(EasyFrame):
         self.statusLabel["text"] = "Downloading..."
         self.addrListBox.clear()
         self.server.send(bytes("LIST;", CODE))
-        i = 0
         while True:
             inbound = decode(self.server.recv(BUFSIZE), CODE)
             if inbound != "DONE":
-                self.addrListBox.insert(i, inbound)
+                self.addrListBox.insert(self.addrListBox.size(), inbound)
                 self.server.send(bytes("OK", CODE))
-                i += 1
             else:
                 break
         self.statusLabel["text"] = "Addressbook Synchronized."
@@ -212,7 +221,6 @@ class AddressBookClient(EasyFrame):
         self.statusLabel["text"] = "Saving..."
         self.server.send(bytes("SAVE;", CODE))
         self.statusLabel["text"] = "Saved"
-        self.download()
 
 
 def main():

@@ -13,6 +13,7 @@ Add a name to the list.
 from socket import *
 from codecs import decode
 from threading import Thread
+
 import re
 
 BUFSIZE = 1024
@@ -87,6 +88,10 @@ class ClientHandler(Thread):
                 elif command == "UPDATE":
                     # Allows a client to edit an entry
                     self.addressbook.update(payload)
+
+                elif command == "DELETE":
+                    # Allows a client to edit an entry
+                    self.addressbook.delete(payload)
 
                 elif command == "LIST":
                     # Lists all entries from address book

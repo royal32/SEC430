@@ -91,6 +91,15 @@ class ThreadSafeAddressbook(object):
             self.cell.endWrite()
             raise
 
+    def delete(self, payload):
+        """Delete an entry in the addressbook."""
+        try:
+            return self.cell.write(lambda addressbook: self.addressbook.delete(payload))
+        except:
+            print("Error writing to addressbook. (delete function)")
+            self.cell.endWrite()
+            raise
+
 
 class Addressbook(object):
     """The Addressbook class facilitates storage of individual Person objects."""
@@ -137,6 +146,11 @@ class Addressbook(object):
         for entry in self.entries:
             if re.search(old, str(entry)):
                 entry.set(attributes)
+
+    def delete(self, payload):
+        for entry in self.entries:
+            if re.search(payload, str(entry)):
+                self.entries.remove(entry)
 
     def __str__(self):
         """Returns the addressbook with one person per line."""
