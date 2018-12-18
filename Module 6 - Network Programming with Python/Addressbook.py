@@ -1,3 +1,11 @@
+"""
+Primary Author: Seth Phillips
+Team Members: Seth Phillips, Eric Betz
+Program: Address Book Object
+
+This program represents an addressbook object.
+"""
+
 from sharedcell import SharedCell
 import re
 

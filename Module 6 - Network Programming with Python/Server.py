@@ -3,8 +3,7 @@ Primary Author: Seth Phillips
 Team Members: Seth Phillips, Eric Betz
 Program: Address Book Server
 
-This program creates a virtual server for client interaction.
-It uses a gui interface to turn on and off the server.  
+This program creates a server to provide access to an addressbook.
 """
 
 from breezypythongui import EasyFrame
@@ -40,6 +39,7 @@ class AddressBookServer(EasyFrame):
         self.status_label = self.addLabel(text=self.status_label_dict["not_running"], row=1, column=1, foreground="red")
 
         self.server = socket(AF_INET, SOCK_STREAM)
+        self.addressbook = None
 
     def open_file(self):
         """
@@ -64,8 +64,6 @@ class AddressBookServer(EasyFrame):
 
         except IndexError:
             self.messageBox(title="Error", message="An error has occurred. Check the format of the file.")
-
-        print(str(self.addressbook))
 
     def save_file(self):
         """Opens the addressbook file on the disk and saves the contents of the addressbook object to it."""
@@ -102,6 +100,7 @@ class AddressBookServer(EasyFrame):
             self.server_running = True
         except OSError:
             self.messageBox(title="Error", message="There was an error starting the server.")
+            raise
 
         while self.server_running:
             try:
@@ -110,14 +109,14 @@ class AddressBookServer(EasyFrame):
                 print("... connected from: ", address)
             except:
                 self.messageBox(title="Error", message="There was an error connecting to a client.")
-                break
+                raise
 
             try:
                 clienthandler = ClientHandler(self, client, self.addressbook)
                 clienthandler.start()
             except:
                 self.messageBox(title="Error", message="There was an error starting a client handler.")
-                break
+                raise
 
     def stop_server(self):
         """Stop the server. Haven't gotten this working yet."""
