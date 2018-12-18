@@ -10,9 +10,6 @@ This program creates a gui based virtual client to interact with the virtual ser
 from socket import *
 from codecs import encode, decode
 from breezypythongui import EasyFrame
-from Crypto import Random
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import PKCS1_OAEP
 
 """Configuration"""
 HOST = "localhost"
@@ -28,13 +25,6 @@ class AddressBookClient(EasyFrame):
         """Initialize the frame and widgets for the GUI"""
         EasyFrame.__init__(self, title="Address Book Client")
         # Add the labels, fields, and buttons
-
-        rng = Random.new().read
-        RSAkey = RSA.generate(2048, rng)
-        self.pubkey = RSA.importKey(RSAkey.publickey().exportKey("PEM"))
-        self.privkey = RSA.importKey(RSAkey.exportKey("PEM"))
-        self.decipher = PKCS1_OAEP.new(self.privkey)
-        self.set_crypto_empty()
 
         self.addr_listbox = self.addListbox(row=0, column=0, columnspan=3)
 
@@ -89,38 +79,23 @@ class AddressBookClient(EasyFrame):
                                                         row=3, column=0,
                                                         columnspan=3)
 
-    def recv_and_decrypt(self):
-        inboundc = self.server.recv(BUFSIZE)
-        if not inboundc:
-            self.messageBox(message="Server disconnected")
-            self.disconnect()
-            return None
-        inbound = decode(self.decipher.decrypt(inboundc), CODE)
-        return inbound
-
-    def send_and_encrypt(self, outbound):
-        outboundc = self.cipher.encrypt(encode(outbound))
-        self.server.send(outboundc)
-
-    def set_crypto_empty(self):
-        self.server = None
-        self.serverkey = None
-        self.cipher = None
-
     def find(self):
         """Looks up a name in the phone book."""
         # Prompts user for input of desired search
         namere = self.prompterBox(promptString="Enter your query.")
         if namere == "": return
-        self.send_and_encrypt("FIND;" + namere)
+        self.server.send(bytes("FIND;" + namere, CODE))
         result = []
         i = 0
         while True:
             # Ensures the server is connected, continues search until complete or server disconnect
-            inbound = self.recv_and_decrypt()
-            if inbound != "DONE":
+            inbound = decode(self.server.recv(BUFSIZE), CODE)
+            if not inbound:
+                self.messageBox(message="Server disconnected")
+                self.disconnect()
+            elif inbound != "DONE":
                 result.append(inbound)
-                self.send_and_encrypt("OK")
+                self.server.send(bytes("OK", CODE))
                 i += 1
             elif inbound == "DONE":
                 if not result:
@@ -145,12 +120,16 @@ class AddressBookClient(EasyFrame):
         if state == "": return
         zip = self.prompterBox(promptString="Enter the zip code.")
         if zip == "": return
-
+        # Adds commas for delineation
         outbound = ("ADD;{},{},{},{},{},{},{}"
-                    .format(first, last, phone, street, city, state, zip))
-        self.send_and_encrypt(outbound)
-        inbound = self.recv_and_decrypt()
-        if inbound:
+                   .format(first, last, phone, street, city, state, zip))
+        self.server.send(bytes(outbound, CODE))
+        inbound = decode(self.server.recv(BUFSIZE), CODE)
+        if not inbound:
+            # Creates notification of server disconnection
+            self.messageBox(message="Server disconnected")
+            self.disconnect()
+        else:
             self.status_label["text"] = "Entry added."
 
     def update(self):
@@ -175,12 +154,16 @@ class AddressBookClient(EasyFrame):
         if state == "": return
         zip = self.prompterBox(inputText=attributes[6], promptString="Enter the zip code.")
         if zip == "": return
-
+        # Adds commas for delineation
         outbound = ("UPDATE;{}:{},{},{},{},{},{},{}"
-                    .format(selected_entry, first, last, phone, street, city, state, zip))
-        self.send_and_encrypt(outbound)
-        inbound = self.recv_and_decrypt()
-        if inbound:
+                   .format(selected_entry, first, last, phone, street, city, state, zip))
+        self.server.send(bytes(outbound, CODE))
+        inbound = decode(self.server.recv(BUFSIZE), CODE)
+        if not inbound:
+            # Creates notification of server disconnection
+            self.messageBox(message="Server disconnected")
+            self.disconnect()
+        else:
             self.status_label["text"] = "Entry edited."
 
     def delete(self):
@@ -193,20 +176,14 @@ class AddressBookClient(EasyFrame):
             return
         outbound = ("DELETE;{}".format(selected_entry))
 
-        self.send_and_encrypt(outbound)
+        self.server.send(bytes(outbound, CODE))
         self.status_label["text"] = "Entry Deleted"
 
     def connect(self):
         """Connect to the server"""
         self.server = socket(AF_INET, SOCK_STREAM)
         self.server.connect(ADDRESS)
-
-        # Key exchange
-        self.serverkey = RSA.importKey(decode(self.server.recv(BUFSIZE), CODE))
-        self.cipher = PKCS1_OAEP.new(self.serverkey)
-        print("\nClient received serverkey:\n{}\n".format(decode(self.serverkey.exportKey("PEM"), CODE)))
-        self.server.send(self.pubkey.exportKey("PEM"))
-
+        self.status_label["text"] = decode(self.server.recv(BUFSIZE), CODE)
         self.connect_btn["text"] = "Disconnect"
         self.connect_btn["command"] = self.disconnect
         self.find_btn["state"] = "normal"
@@ -220,9 +197,6 @@ class AddressBookClient(EasyFrame):
     def disconnect(self):
         """Disconnect from the server"""
         self.server.close()
-
-        self.set_crypto_empty()
-
         self.status_label["text"] = "Want to connect?"
         self.connect_btn["text"] = "Connect"
         self.connect_btn["command"] = self.connect
@@ -237,12 +211,12 @@ class AddressBookClient(EasyFrame):
         """Download the newest addressbook from the server"""
         self.status_label["text"] = "Downloading..."
         self.addr_listbox.clear()
-        self.send_and_encrypt("LIST;")
+        self.server.send(bytes("LIST;", CODE))
         while True:
-            inbound = self.recv_and_decrypt()
+            inbound = decode(self.server.recv(BUFSIZE), CODE)
             if inbound != "DONE":
                 self.addr_listbox.insert(self.addr_listbox.size(), inbound)
-                self.send_and_encrypt("OK")
+                self.server.send(bytes("OK", CODE))
             else:
                 break
         self.status_label["text"] = "Addressbook Synchronized."
@@ -250,7 +224,7 @@ class AddressBookClient(EasyFrame):
     def save(self):
         """Tells the server to save its addressbook to the file"""
         self.status_label["text"] = "Saving..."
-        self.send_and_encrypt("SAVE;")
+        self.server.send(bytes("SAVE;", CODE))
         self.status_label["text"] = "Saved"
 
 
